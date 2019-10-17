@@ -1,0 +1,89 @@
+<div ng-controller="IndexCtrl" ng-show="showMessageIndex">
+  <div ng-show="!tableInitialized">
+    <div class="text-center">
+    <br>
+    <img src="./img/loader.gif">
+    </div>
+  </div>
+  <div ng-show="tableInitialized">
+    <br>
+
+    <form ng-submit="applySearch()">
+  	<div class="row">
+	  	<div class="col-xs-10 col-xs-offset-1
+	  	            col-sm-10 col-sm-offset-1
+	  	            col-md-8  col-md-offset-2
+	  	            col-lg-6  col-lg-offset-3"
+           style="position: relative;">
+        <span ng-show="searchEnabled && searchFinishedLoading()"
+              class="glyphicon glyphicon-info-sign" aria-hidden="true"
+              style="position: absolute; top: 11px; left: -10px"
+              uib-tooltip-template="'./modules/index/search-tooltip.html'"
+              tooltip-placement="bottom" tooltip-class="search-tooltip">
+        </span>
+
+        <div ng-if="!searchEnabled" class="text-center">
+          <button ng-click="enableSearch()" class="btn btn-primary">
+            Click to Load Search
+          </button>
+        </div>
+        <div ng-if="searchEnabled">
+          <div class="input-group" ng-show="searchFinishedLoading()">
+            <input type="text" class="form-control" ng-model="search.text"
+                   placeholder="Search messages, e.g. &quot;pure intent from:Richard&quot;, &quot;subject:excellence&quot;" />
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-primary">
+                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+              </button>
+            </span>
+          </div>
+          <div ng-show="!searchFinishedLoading()">
+            <!-- 14px margin bottom to make it same height as input box, so when
+                 loading is done the content does not move -->
+            <uib-progressbar max="1.0" value="searchProgress()" style="margin-bottom: 14px" animate="false">
+              <span style="color: white; white-space: nowrap;">Loading search...</span>
+            </uib-progressbar>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12" style="height:5px;"></div>
+    </div>
+  	<div class="row">
+	  	<div class="col-xs-10 col-xs-offset-1
+	  	            col-sm-10 col-sm-offset-1
+	  	            col-md-8  col-md-offset-2
+	  	            col-lg-6  col-lg-offset-3">
+        <slider ng-model="pagination.sliderPageNumber"
+                min="0"
+                max="pagination.numPages() - 1"
+                step="1"
+                ticks="pagination.ticks.indices"
+                ticks-labels="pagination.ticks.labels"
+                ticks-snap-bounds="pagination.ticks.snapBounds"
+                formatter="pagination.formatTooltip(value)"
+                slider-tooltip-position="bottom"
+                on-stop-slide="pagination.setPageNumber(value)"
+        >
+        </slider>
+      </div>
+    </div>
+
+    </form>
+    <br>
+    <table id="messageIndexTable" class="table table-hover table-bordered"
+           cellspacing="0" width="100%">
+      <thead>
+      <tr class="row">
+        <th class="col-xs-4  col-sm-4 col-md-5 col-lg-6">Subject</th>
+        <th class="col-xs-4  col-sm-3 col-md-3 col-lg-3">Author</th>
+        <th class="col-xs-4  col-sm-3 col-md-3 col-lg-2">Posted<span id="tz"></span></th>
+        <th class="hidden-xs col-sm-2 col-md-1 col-lg-1">#</th>
+      </tr>
+      </thead>
+      <tbody>
+      </tbody>
+  </table>
+  </div>
+</div>
