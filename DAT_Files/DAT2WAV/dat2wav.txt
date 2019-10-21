@@ -1,0 +1,328 @@
+
+DAT2WAV - version 1.2a - Copyright 1999-2002 Computall Services
+Homepage:  http://www.ncf.ca/~aa571/index.html
+Email: aa571@ncf.ca
+
+
+DAT2WAV - What is it?
+----------------------
+
+DAT2WAV is a simple little command line program to dump the digital
+audio from a DAT tape to a wav file, and write audio data to a DAT tape.  
+It runs only in a DOS window under Win95/98/Me/NT/2K/XP. It requires the ASPI 
+drivers to be installed and running.
+
+This new version of DAT2WAV includes the ability to use MP3 source files
+when writing to tape.  We had hoped to be able to include a fully licensed
+MP3 decoder to ship with the software, but it turned out that we had
+some problems getting the patent license from Thomson. These problems caused
+a very long delay in being able to release our software and even prevented
+us from completing our beta testing. For the actual MP3 decoding, we have no 
+choice but to use the decoder that ships with Windows 98 and later.  It also 
+ships with Microsoft's Netmeeting and Direct X.  This means that most users
+should already have the decoder installed.  The driver file will be called
+l3codeca.acm, l3codecp.acm or l3codecx.acm and should be hiding somewhere in
+the windows directory or its subdirectories.
+If you can't find any of them on your machine, you can try to get l3codecx.acm from: 
+http://soundamerica.com/codec.htm
+
+In order for this software to work you have to have the ARCHIVE or
+Sony DAT drives with the audio firmware.  The software does check 
+for the firmware, and will fail if it isn't there. See notes at end 
+of this text file for more info on the drives.
+
+The version being distributed is limited to extracting or writing the 
+audio for only 5 minutes of the tape.  This should be enough for you
+to decide if the software will work for you before ordering it.
+The full registered version has no such limit.
+
+What's new in 1.2?
+------------------
+We've added a LOT of new features in 1.2.  The biggest new feature is
+the ability to write DAT tapes. A summary of the new features:
+ - WAV2DAT - write WAV and MP3 files to tape
+ - DAT2DAT - use two drives to make an exact copy of a tape
+ - DAT2IMG - make a copy of a tape to an image file
+ - IMG2DAT - write an image file to tape
+ - Media Recognition System (MRS) support
+ - seek to specific points on tape before reading
+ - force reading tape to physical end of tape
+ - user settable lead-in, lead-out, intertrack silence gaps
+ - repair most types of read errors
+ - a whole lot more code to help diagnose problems
+
+What's new in 1.1?
+------------------
+DAT2WAV now supports DAT tapes that have 48KHz, 44.2KHz, 32KHz 
+and 32KHz LP modes.  It also has quite a lot more code to deal
+with all the strange things our customers were seeing at the
+early parts of a tape that have been recorded on a number of
+times before.  We've made great improvements to the waveout
+functions so that they work very well on slower machines with
+slower drives. We've also spent a lot of time working with 
+Sony to make sure the software fully supports their audio
+enabled DAT drive.
+
+How do I use this program?
+--------------------------
+
+
+It uses a simple command line interface to specify all the parameters.
+
+You have to specify a mode (one of DAT2WAV, WAV2DAT, DAT2DAT, DAT2IMG, IMG2DAT),
+as well as the host adapter number and the scsi id of the tape drive.
+
+
+Mode types:
+/DAT2WAV FILENAME - the mode to extract the audio to wav files using the
+                    filename FILENAME as the base for each of the files written
+                    to disk.  When using /STARTID, each file will be given a
+                    sequential name starting with 01. eg. FILENAME01.WAV
+/WAV2DAT CUEFILE - the mode to write a number of files to tape using the file
+                   called CUEFILE.CUE.  The software will automatically add
+                   the .CUE to the file name so no file extension should be used.
+/DAT2IMG IMGFILE - the mode to copy an entire tape to disk as a single image file
+                   called IMGFILE
+/IMG2DAT IMGFILE - the mode to copy a single image file to tape using the file
+                   called IMGFILE
+/DAT2DAT - the mode to copy an entire tape directly to another tape when using
+           two tape drives
+
+Tape drive specification:
+/INPUTID HostAdapter:TargetID - when using DAT2WAV, DAT2IMG, and DAT2DAT you have
+                    to define the ASPI host adapter number and SCSI target ID
+/OUTPUTID HostAdapter:TargetID - when using WAV2DAT, IMG2DAT, and DAT2DAT you have
+                    to define the ASPI host adapter number and SCSI target ID
+
+The host adapter number is the one assigned by the ASPI drivers.  The target id
+is the actual SCSI id of the tape drive. If you don't know what these values are
+for your system, you may be helped by getting the program ID.EXE from www.grc.com.
+
+Optional settings:
+/WAVEOUT - specify to send the audio to the soundcard instead of a wave file
+/REWIND - specify if you want the tape to be rewound before starting.
+/STARTID - specify if you want the wav files created to be split when
+           start id's are found on the tape - not specifying this option
+           will only change wav files when a new sample rate is found
+/MRSOFF - the Archive 4326/8000 drives have a feature to detect if a tape is
+          audio vs DDS and will prevent writing to audio tapes without setting
+          the MRS mode to off.  This is done by the software automatically, but
+          can be ignored if necessary
+/STOPEOT - the software normally uses the end of tape markers to identify when to
+           stop reading.  Some times there are all kinds of wierd things written
+           to the tape that can confuse the software.  One case is when a tape has
+           been recorded a whole bunch of times.  By using the /STOPEOT option the
+           software will only stop reading when the physical end of tape is reached.
+/SEEK - allows seeking to a specific point on the tape before writing.  The position 
+        can be defined by:
+	   Program number (PROGNUM)
+	   Absolute time (ABSTIME)
+	   Running time (RUNTIME)
+	   Program time (PROGTIME)
+ 	The PROGNUM is just the integer number of the program number
+	The other times are defined in the form of HH:MM:SS:FF
+
+/ERRORCORRECT - this turns on error correction of read errors from the
+          tape. The errors are only corrected when the drive reports that
+          it has encountered problems with a particular frame. There 
+          tend to be many more errors at the points in the tape where
+          the DAT recorder has been either paused or stopped.
+
+Here's a whole bunch of examples of how to use the varous options
+
+DAT2WAV /dat2wav dataud /inputid 1:5
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc, only changing wav files
+ when a new sample rate is found
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /rewind
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - this will rewind the
+ tape before extracting the audio - will change wav files only when
+ a new sample rate is found
+
+DAT2WAV /dat2wav /inputid 1:5 /waveout
+ this will play the audio to the sound card instead of writing to disk
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found
+
+DAT2WAV /wav2dat CUEFILE /outputid 1:5 /rewind
+ this will write to tape a number of files based on the cuefile.cue file. It will
+ also rewind the tape prior to writing
+
+DAT2WAV /dat2dat /inputid 1:5 /outputid 1:6 
+ this will copy a tape from 1:5 to 1:6
+
+DAT2WAV /dat2img IMGFILE /inputid 1:5 /rewind
+ this will copy an entire tape from 1:5 to a file called IMGFILE
+
+DAT2WAV /img2dat IMGFILE /outputid 1:5 /rewind
+ this will copy to tape 1:5 from a tape image file called IMGFILE
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid /seek PROGNUM 4
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found - it will seek to
+ the start of Program Number 4 before starting to read data
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid /seek ABSTIME 02:15:22:07
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found - it will seek to
+ the Absolute time 2h15m22s07f
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid /seek RUNTIME 02:15:22:07
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found - it will seek to
+ the Running time 2h15m22s07f
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid /seek PROGTIME 02:15:22:07
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found - it will seek to
+ the Program time 2h15m22s07f
+
+DAT2WAV /wav2dat CUEFILE /outputid 1:5 /rewind /mrsoff
+ this will write to tape a number of files based on the cuefile.cue file - it will
+ rewind the tape prior to writing - it will not turn off the Media Recognition System
+ on 4326/8000 drives when real audio DAT tapes are used (normally MRS is configured
+ in the drive automatically by DAT2WAV)
+
+DAT2WAV /dat2wav dataud /inputid 1:5 /startid /stopeot
+ this will dump from tape drive at 1:5 to wav files called
+ dataud1.wav, dataud2.wav, dataud3.wav etc - it will change wav files
+ when either a new sample rate or a start id is found - it will read from the
+ tape until the physical end of tape is reached instead of stopping at the logical
+ end of tape
+
+
+
+Cuefile structure
+-----------------
+The cuefile is comprised of two parts, the configuration section and 
+the track list section.
+
+SCMS - this allows setting what SCMS bits should be written to the tape
+	00 - copy permit
+	01 - one copy remaining
+	10 - copy prohibit
+	11 - reserved
+
+STARTID - ON/OFF - write start ids for each track
+ABS_TIME - ON/OFF - write the Absolute Time (ABSTIME) to the tape
+PROGRAM_NUMBER - ON/OFF - write the program numbers for each track
+32KHZ_LP = ON/OFF - write the 32khz tracks in long play mode - the software will
+                   not do the sample rate conversion from either 44.1khz or 48khz
+LEADIN_SILENCE - write x number of seconds to the start of the tape
+LEADOUT_SILENCE - write x number of seconds to the end of the tape
+INTERTRACK_SILENCE - write x number of seconds between the tracks of the tape (written
+                    as silence at the end of each track)
+
+FILE - this identifies each of the file names to be written to the tape
+  each entry needs to identify the track number and needs to be 3 characters
+  used for each number eg. FILE_001, FILE_002, FILE_003
+  each file can be any of the following types:
+    - 32khz 16bit stereo WAV
+    - 44.1khz 16bit stereo WAV
+    - 48khz 16bit stereo WAV
+    - 32khz 16bit stereo MP3
+    - 44.1khz 16bit stereo MP3
+    - 48khz 16bit stereo MP3
+
+
+
+Here's an example of the contents of a good cuefile:
+[CONFIG]
+SCMS=00
+STARTID=ON
+ABS_TIME=ON
+PROGRAM_NUMBER=ON
+32KHZ_LP=OFF
+LEADIN_SILENCE=10
+LEADOUT_SILENCE=10
+INTERTRACK_SILENCE=10
+[FILES]
+FILE_001=d:\music\All you need is love.mp3
+FILE_002=d:\music\A hard day's night.mp3
+FILE_003=d:\music\track03.wav
+
+
+
+
+What drives work with it?
+-------------------------
+
+So far the list of drive/firmware combinations that apparently work are: 
+
+labeled Archive 4320NT: 
+   ARCHIVE Python 25601-XXX2.63 (we've tested one)
+   ARCHIVE Python 25601-XXX2.75 (we've tested one)
+
+labeled Archive 4330: 
+   ARCHIVE Python 25601-XXX2.63 (we've tested one)
+
+labeled Conner/Seagate CTD-8000/4326NT: 
+   ARCHIVE Python 01931-XXX5AC (we've tested one)
+   ARCHIVE Python 01931-XXX5.56 (haven't actually had one in hand) 
+   ARCHIVE Python 01931-XXX5.63 (haven't actually had one in hand) 
+
+labeled Conner 4530:
+   ARCHIVE Python 25501-XXX (haven't actually had one in hand) 
+
+labeled Sony SDT-9000:
+   SONY    SDT-9000    1.11 (haven't actually had one in hand)
+   SONY    SDT-9000    1.13 (we've tested one)
+           (SGI sells the Sony drives under the part numbers: P9-DAT12-INT (internal) 
+           and P9-DAT7-EXT (external) )
+
+A lot of useful information is available from our DAT FAQ web page:
+http://www.ncf.ca/~aa571/datfaq.htm
+
+
+What's involved in registering the software?
+--------------------------------------------
+
+We've thought long and hard about what to do about registration.  We
+know that you can buy the $2500 drive from SGI and use their software 
+for who knows how much money, we also know you can spend $2500 and buy
+the software/hardware solution for the MAC.  We think there is a
+market for a much less expensive solution.  We will be working hard to
+find distributors who have the necessary drives and we will be letting
+everyone know what to do to order them.  We will also be looking into
+doing bulk purchases of the drives to see if there are any price
+improvements.
+
+As for price, we think you don't have to spend thousands of dollars,
+and as with all our software we price it reasonably.  The registration 
+fee for DAT2WAV is $50 US.  We won't be asking for a fee every time a new 
+version comes out. The fee will give you a lifetime (or as long as we 
+bug fix and add features) of free updates via the Internet.  We will 
+also notify registered users by email of any new versions for a year.
+
+Our partner company Wellesworth Publishing has been licensed to sell
+the software to customers who wish to use credit cards.  
+
+The online order form can be found at:
+http://www.magma.ca/~aa571/online.htm
+
+Our mail address is:
+      Computall Services
+      PO Box 372444
+      Satellite Beach, FL, USA
+      32937-2444
+
+If you have any questions, our email address is
+aa571@ncf.ca,
+but RTFM before you start sending me your questions.
+
+
+Known problems
+--------------
+
+- none at the moment
+
+

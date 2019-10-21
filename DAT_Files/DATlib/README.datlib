@@ -1,0 +1,698 @@
+README for DATlib V0.7
+----------------------
+
+!!! WARNING: This is early beta-software in terms of reliability and        !!
+!!! alpha software in terms of completeness of applications. There is no    !!
+!!! guarantee that we will find the time to complete this work so do not    !!
+!!! depend on it. All source is available so you can always fix it yourself !!
+
+1 Features
+  --------
+  This package contains sources and precompiled binaries for DATlib,
+  a library and (preliminary) applications to utilize some of the
+  advanced streaming-tape features of SCSI-DDS drives under unix and
+  especially the AUDIO-DAT capabilities of Archive Python DDS drives.
+
+  Currently, only SunOS >= 5.4 is supported to the full extent of features.
+  Linux is in early stages of development, but don't hold your breath.
+
+  DATlib supports the following enhanced DDS features:
+  Partitions, compression, drive statistics.
+
+  DATlib supports reading and writing of DAT-audio data to ARCHIVE Python
+  DDS drives. It supports 32Khz, 44.1Khz and 48 Khz normal play as well
+  as 32 Khz long play. DATlib for audio is mostly a library to access these
+  facilities. DATlib tries to implement OS-independent interfaces for easy
+  porting.
+
+2 INSTALLATION
+  ------------
+
+2.1 quick installation
+    ------------------
+
+  Right now, installation is for the experienced system administrator.
+  Don't try it if you do not feel confident to know what the following
+  steps will mean to the operation of your machine:
+
+  a) Read the chapter below on "Requirements" and make sure that your
+     system suits them. In summary this mean:
+
+     - SparcStation with 'sun4m', 'sun4c' or 'sun4u' kernel architecture
+     - SunOS-5.4 or newer
+     - Archive-Python DDS drive connected to a SCSI-bus with 'esp'
+       or 'fas' hardware
+       and with audio-firmware
+  
+  b) Make sure that your DDS drive will work correctly with all the
+     standard software (i.e.: 'mt' for status and operations and 'dd'
+     for read/write). There should be a chapter in Suns documentation about
+     handling the tape (especially 20 pages on how to plug in the power
+     connector).
+
+     This point can be a problem in the first place bacause you may not have
+     a valid '/kernel/drv/st.conf' file for your Archive Python with Audio
+     firmware in the first place. Don't worry. You will get it in the
+     next step:
+
+  c) Install the enhanced drivers from the DATlib distribution:
+     (We from now on assume this distribution to be in $DIST and that you
+      are root)
+
+     - Save /kernel/drv/st first, i.e.: to st-5.X.orig
+
+     - Copy $DIST/kernel/st-5.X to /kernel/drv/st
+       X means the release best suited for your OS. So far we've only got 5.4,
+       but it will run with 5.5 or 5.5.1
+
+     - Copy $DIST/kernel/st.conf to /kernel/drv/st.conf
+
+       Save /kernel/drv/st.conf first. $DIST/kernel/st.conf is a replacement
+       for an unmodified st.conf, so if you alreade made some changes you
+       will most likely know how to integrate $DIST/kernel/st.conf.
+       The important lines are those relating to Archive Python drives.
+     
+     Now you can either reboot or try to activate the improved driver
+     without rebooting:
+
+     - To activate the improved driver without rebooting:
+
+       % /usr/sbin/modinfo | grep ' st '
+       93 fd1ad000 1be20  33   1  st (SCSI Sequential Access Driver)
+       ^^
+
+       Take the number in the first column and say:
+
+       % /usr/sbin/modunload -i 93
+
+       If that fails, some process is still using some tape device.
+       Try to kill all processes doing anything with tapes.
+
+       else: Reboot
+      
+  e) Redo paragraph b) - i.e.: check that the DAT drive works normally.
+
+     The most simple test for an Archive Python DDS-drive is:
+
+     - Insert a valid DDS tape into the drive.
+
+     - Check the different operating modes. If a check results in
+       "no tape loaded or drive offline", otherwise the mode works
+       (even if "illegal request" or the like is returned).
+
+       % mt -f /dev/rmt/0l status # -> Must work. This is DDS data mode
+       % mt -f /dev/rmt/0m status # -> Must work. Equivalent to 0l
+       % mt -f /dev/rmt/0h status # -> Should not work. If it does its
+				  #    Sun firmware on the drive
+       % mt -f /dev/rmt/0c status # -> Must work. This is the audio mode.
+				  #    If it is not working, then you've got no
+				  #    audio firmware on the drive
+      
+       WARNING: These results are only for Archive-Python. If you
+       have another DAT-drive all densities will normally work.
+       
+       If you do not have audio firmware you may read the chapter on 
+       requirements again.
+
+  f) Now you may want to start experiment with the applications. If you do
+     have an audio DAT tape, insert it and try to run
+
+     bin/ply
+
+     This is the graphical user interface and you can simply check that the
+     audio mode is running by playing back the tape. Do not use the
+     fast-forward or fast-backward buttons though, because this will not
+     (yet) work.
+
+     Refer to the chapter on "Running DATlib" for more information about
+     the applications.
+
+     If you have trouble with the applications, try first to read audio
+     from an DAT audio tape without any application:
+
+     % setenv TAPE /dev/rmt/0cn
+     % dd if=$TAPE of=/tmp/dat-audio bs=5760
+
+     This will run until the end of the tape if everything works fine, but
+     you can interrupt it any time. If there is an immediate error then
+     the tape is no audio tape or something is wrong with the installation.
+  
+  g) To complete installation of the kernel modules, install the
+     fixed SCSI-adapter driver.
+
+     Be warned: Unless you have a diskless workstation, you cannot activate
+     the fixed driver without a reboot. If anything is wrong with the
+     driver or the way you installed it, then you're machine will be
+     non-operational because the 'esp' driver is used in the most early
+     parts of the bootstrap process. If you do have a 'sun4u' kernel
+     architecture machine (i.e.: Ultrasparc) replace 'esp' with 'fas', that's
+     the new driver being used on UltraSparc.
+
+     - Make a backup of /kernel:
+      
+       % cp -r /kernel /kernel.bck
+
+     - Copy $DIST/kernel/5.X/esp to /kernel/drv/esp
+
+       X means the release best suited for your OS.
+       Save /kernel/drv/st first, i.e.: to esp-5.X.orig
+
+     - Reboot the machine
+      
+       Now, if anything fails in the bootstrap process due to a malfunctioning
+       new 'esp' driver, you have the following alternatives:
+
+       - Boot from another device (network, other disk, CD-ROM)
+       - Do a 'boot -a' (that's what /kernel.bck was made for).
+	 'boot -a' will ask you about /kernel and if you answer
+	 /kernel.bck, that backup copy will be used instead of /kernel.
+
+     - Given that the reboot went fine, try to run 'ply' again with
+       an inserted DAT audio tape. This time try out 'fast-forward' and
+       then 'stop'. If that works, your installation of the kernel
+       modules is completed.
+  
+  h) Install the user level programs
+
+     Depending on your preferences, the application files in
+     $DIST/bin, $DIST/man and the library files in
+     $DIST/lib, $DIST/include (that you only need to write your own
+     applications) should be installed at the place of your preference,
+     i.e.: /usr/local/{bin,man,lib,include}.
+
+     We are sorry, but right now we have not provided an installation
+     script for this step.
+  
+2.2 further installation hints:
+    ---------------------------
+
+  Access rights for tape drives:
+
+  If users want to access the DDS-drive, they need to have appropriate
+  access-rights to that drives device nodes. In Solaris there are two ways
+  to do this. The normal way is set the access-rights on the device nodes
+  statically at the time of installation of the program package:
+
+  % /usr/ucb/chown root.tape /dev/rmt/0*
+  % /usr/bin/chmod 0660      /dev/rmt/0*
+
+  In this example, all the device nodes belonging to the first tape drive
+  are configured for access by the user root and the group 'tape' - which
+  has to be created first (of course). This configuration would require
+  to put every possible tape drive user into the group 'tape'. 
+
+  The disadvantage if this configuration is that it requires administrative
+  actions to allow access to the drive (if you do not set the access rights
+  to 0666) and even more there is the problem that there is no protection
+  between different users for accessing the drive simultaneously.
+
+  An alternative available in SunOS-5x is to add the tape drive device
+  nodes into /etc/logindevperm. This is documented in logindevperm(4).
+  The effect is that the user logged in at the console of the workstation
+  that the tape drive is connected to can be granted exlusive access to the
+  tape drive. 
+
+3 Using DATlib
+  ------------
+
+  This chapter explains what the applications that DATlib comes with are
+  good for. The libraries that these applications are built upon and
+  how to use them to write your own applications are explained in the
+  chapter on "Porting and development".
+
+  DATlib comes with the following applications:
+
+  dat          - This is 'mt++'
+	         i.e.: The 'mt' application with added features for DAT.
+
+  cd2dat       - Copy compressed CD's onto DAT tapes (and uncompress them).
+
+  player       - A simple player for audio DAT tapes. No GUI.
+
+  playtrack    - A demo application to read a track into a file. Not finished.
+
+  record       - Record tracks from audiofile into DAT tape. Useful.
+
+  player       - Early stages of a GUI DAT-player without the use of DEVGUIDE.
+
+  ply          - A GUI DAT-player written with DEVGUIDE. Usable but simple.
+
+  At the current time, the documentation for the audio applications is
+  just the source.
+
+  dat
+  ---
+
+  This is the only application that does work for both normal DDS drives
+  and audio capable DDS drives (because it has nothing to do with audio).
+  It is just an enhanced version of 'mt' with a few but important
+  options added that do support specific DDS features:
+
+  comp on | of :    See also the chapter on "Suns tape driver and compression".
+		    This will configure if data written to tape will be 
+		    compressed by the drive or not. Can be called in between
+		    files or blocks written to tape. Suns scheme of having
+		    compression encoded in the tape density (i.e.: /dev/rmt/0nn
+		    is uncompressed, others are not) will set compression on
+		    writing only when at BOT.
+
+  decomp on | off : Never use this if you do not want to see how compressed
+		    DCLZ data on a DDS tape looks like. Default is always
+		    decompression off.
+  
+  reset:            Resets the tape driver and drive  if they hangs (hopefully).
+
+  crt <size>:       Create partition 1
+  dele:             Delete partition 1
+  sel <n>:          Change active partition. DAT tapes can have two partitions.
+		    The first partition is called "partition 1". It is
+		    optional and must be created with "crt <size>". This
+		    poartition is at the beginning of the tape. The main
+		    partition is called "partition 0" and is behind partition
+		    1 (if existing) up to the end of the tape.
+
+		    Writing to partition 1 allows applications to write
+		    chaning directory information at the beginning of a
+		    tape without deleting recorded data in the main partition.
+
+		    Usually a size of 12 Megabyte is used for the additional
+		    partition 1.
+  
+  inquire:          Return inquiry data from the drive. This information
+		    contains information about drive type and firmware amongst
+		    others.
+  
+  log:              Return the information in the DAT log pages as far as
+		    we know their format.
+
+  Another enhancement of the 'dat' program is that it can return drive
+  information like "inquire" and "log" even if no tape is inserted.
+  More commands may have been added recently, so read the online help.
+
+4 Requirements
+  ------------
+
+4.1 Operating System: SunOS-5.4, 5.5.x
+    -----------------
+
+  DATlib in its current version was developed on a SunOS-5.4 sparc system.
+  It consists of user level applications, libraries and of kernel modules.
+  Whilst the applications and libraries will be useful in SunOS-5.4 and
+  all currently available new releases (SunOS-5.5 and SunOS-5.5.1), we
+  are not sure that the kernel drivers will work correctly with those
+  newer releases. Nevertheless, we did successfully use the kernel modules
+  in both SunOS-5.5 and SunOS-5.5.1. When we manage to compile the kernel
+  modules in 
+
+4.2 Hardware requirements: Any SparcStation except 'sun4' karch.
+    ----------------------
+
+  Again due to the kernel modules, DATlib will not run on 'sun4' kernel
+  architecture hardware (i.e.: Sun4/110 .. Sun4/690). This is because
+  the 'sun4' kernel architecture machines do have totally different SCSI
+  code in the kernel than the newer sparc architectures (it's the so called
+  OLDSCSI from sun3 machines).
+
+  The 'st' kernel driver that comes with DATlib and that implements the
+  DDS and AudioDAT features should run on any sparc except those outlined
+  above. We have actually only tested it on SparcStation 10 and SparcStation
+  20 though.
+
+4.3 The adapter driver problem: full functions only with 'esp'/'fas' patch
+    ---------------------------
+
+  The 'st' kernel driver will provide almost all functions required for
+  operating the AudioDAT mode. The one exception is the ability to stop
+  fast-seek operations. Applications like a simple interactive "DAT Recorder"
+  (which is what 'ply' is) do need this: The user selects 'fast-forward',
+  sees the tape-counters running and then presses the 'stop' button, or
+  'start' button. This will not work without a fix because of the way it is
+  implemented in the Archive-DDS drives.
+  
+  Whilst all AudioDAT actions can be mapped to specific SCSI-commands,
+  stopping of a 'LOCATE' SCSI-command (which is what 'fast-forward' maps to)
+  is achieved only by mean of am 'ABORT' SCSI-message. Even though the
+  'st' SCSI-target driver in the kernel can call this function of the
+  underlying SCSI-adapter driver, it does not work correctly with the
+  SCSI-adapter drivers provided by sun. The problem seems to be that
+  Archive and Sun do interpret the SCSI-2 standard differently. The Sun
+  SCSI-adapter driver thinks that there is no outstanding command to be
+  aborted and thus does not even try to. Archive thinks that it is ok
+  to signal an 'operation completed' to the SCSI-adapter driver (even
+  though the drive still 'fast-forwards', because the 'IMMEDIATE' bit is
+  set in the command.
+
+  In the end we modified the 'esp' Sun SCSI-adapter driver to work correctly
+  with the Archive-Python on this abort problem. We did alert SunService
+  as to this problem, and they told us that the fix will be in 2.6 even
+  though the problem was not accepted by Sun as a problem of Sun's
+  SCSI-adapter driver.
+
+  The current state of affairs is that we do provide a fixed 'esp' SCSI-adapter
+  driver. This will work in SunOS-5.4. We do also include a fixed 
+  version of the 'esp' SCSI-adapter provided by Sun for SunOS-5.5.
+
+  The 'esp' SCSI-adapter driver is used in all SparcStations except for
+  UltraSparc which use the 'fas' driver. This means that you cannot fully
+  exploit 'ply' or similar applications on UltraSparc.
+
+
+5 Porting and developing:
+  -----------------------
+
+5.1 Theory of operation:
+    --------------------
+
+  "src/lib" contains the files to for a library to access 
+  the enhanced features of DDS/SCSI drives from user applications.
+  These enhancements include: partition handling, compression handling,
+  log and mode page handling. Audio facilities are not included in
+  this library but in dataudiolib.
+
+  Datlib is implemented using three different interfaces to the
+  kernel. "uscsicmd.c" contains the first interface which utilizes
+  the USCSI command interface available with SunOS (and possibly
+  similarily other OS's). "kernelp.c" contains an interface which
+  utilizes the modified kernel driver for SCSI tapes. The third
+  interface is provided by "gscsi.c" which stands for generic-scsi.
+  This interface tries to implement a somewhat OS-independent interface
+  between the application and the kernel/driver layer. Currently
+  it supports SunOS (where it actually utilizes the USCS command
+  interface) and Linux (where it utilizes the generic scsi device
+  "/dev/sgX").
+
+  Datlib is currently only utilized by the applications "dat" which
+  tries to be an enhanced version of the command "mt".
+
+  Porting of datlib to other architectures is the easiest step in
+  porting this whole software to a different OS. It should use the
+  gscsi.c interface.
+
+  So, the real way is to change the driver. So far we have done this
+  only for the 'st' driver that comes with Solaris 2.4. As Solaris is not
+  a freely available operating system we are not allowed to share the
+  additions to dat
+
+  If you want to port this software to a different Unix-variant there will
+  be a couple of problems. The applications and libraries will probably
+  run and compile on nearly every unix after a little bit of tweaking.
+
+  The problem comes with the kernel driver for the DDS tape drive.
+  The functions required to support the "datlib" functions can probably
+  be done with user-level interfaces like "generic scsi" or "USCSI". This 
+  is not the case with the audio mode. Working in audio mode is achieved by
+  selecting density 0x80 with scsi-mode-select. Afterwards a couple of
+  common scsi-commands may work differently to what your dirver expects.
+  If you want to switch to audio-mode without modifying the kernel driver
+  you better do all read/write and other access to the tape device WITHOUT
+  help of the driver, otherwise it may get confused.
+
+5.2 Documentation:
+    --------------
+
+  The real documentation is in german and is in the directory "doc". That
+  documentation is provided in postscript form and the source in Frame-5.
+  The documentation is the paper of the student who wrote DATlib. The following
+  text tries to summarise the important details required to install &operate
+  DATlib and to understand about the system components that are required
+  or that pose a problem.
+  
+  If you want to understand the program, there are a couple of documents,
+  more or less difficult to get, which are all listed in the biography section
+  of the paper. You will most likely only need them if you want to
+  port DATlib to a different platform, but not to use it (except that
+  the DAT conference standard is quite helpful if you cannot read the german
+  paper and would like to know what kind of subcodes exist).
+  
+  - For DDS in principle: There are a couple of standards describing the
+    format. I Think here are IEC and other version of this. The most easy way
+    is through ECMA (www.ecma.ch).
+
+  - For Audio-DAT: The definition is "The DAT conference standard" This curcles
+    around as copies of copies of copies of copies, because it is published
+    by some obscure japanese conference organisation. It is more easy to get
+    the IEC or national standards on those (like the DIN standards in germany).
+  
+  - For SCSI command sets: To learn how to do data transfer over the SCSI
+    interface there is a manual from every manufacturer (Seagate, Conner,
+    HP). These should easily be available for developers from the companies
+    support lines, but it took be 3 years to get the HP documentation for
+    example, so don't hold your breath.
+
+  - The documentation on how to do audio-DAT transfers on an Archive Python DDS
+    drive is currently somewhat more difficult to get, but basically it's
+    qite simple: Mode select 0x80 and then you read/write frames of 5760 byte
+    length containing subcode and audio data. For details see the code of
+    DATlib.
+
+6. DDSdrives:
+   ----------
+
+  general:
+  
+  The "dat" applications and all other applications that do only use "libdat.a"
+  will most likely work with any SCSI-DDS drive. We currently only have
+  access to HP, Sony and Seagate DDS drives and only certain models and we
+  are not even sure that every feature has been tested with every drive.
+  
+  Using the audio capabilities that come with "libdataudio.a" and which are
+  utilized by the applications like ply requires a DDS drive that supports
+  audio-DAT. To our knowledge, only DDS drives currently sold by Seagate
+  will support this feature and only so if they do have the right firmware
+  installed. The following paragraphs tell a smal fairy tale about that
+  firmware
+
+  origin:
+  
+  The DDS drives that do support DAT-audio where originally built by a company
+  called "Archive". This company sold their prducts under a couple of different
+  company labels like "ARDAT", "IRWING" "MAYNARD" or "ARCHIVE". Sometimes
+  in 199? "Archive" was aquired by Conner which was aquired by Seagate about
+  2 years later. The original name of the DDS drives was and still is 
+  "ARCHIVE PYTHON". This is the name that we will refer to in this text. If
+  you do have a DDS drive of unknown origin, possibly with one of the comany
+  names above than it will most likely be an "ARCHIVE PYTHON". This name is
+  the one returned by the SCSI-inquiry command (you can get this info from
+  the "dat" command), but if it is an OEM version of the drive it may return
+  a different label.
+  
+  audio:
+  
+  On request from SGI (Silicon Graphics) Archive started to develop audio
+  capable firmware for their DDS drives shortly after they introduced the first
+  ones in the late 1980'. SGI also cooperated with Toshiba and Sony to
+  have them develop CD-ROM drives with audio reading capabilities (which is
+  a different story). Without SGI there would probably be no audio support
+  in neither any DAT or CD-ROM. The Unix operating system on the SGI
+  workstations does provide audio applications for DAT and CD-ROM since then.
+  So far, none of the companies that owned the Archive Python hardware has ever
+  officially released the documentation of how to do audio with those drives to
+  random developers. The two most often used excuses are that the firmware is
+  owned by SGI (which is not true if you believe SGI) and that the available
+  documentation is insufficient for general release (which may hold some
+  thruth).
+
+  versions:
+  
+  Lexus 1:
+  The first DDS-drives from conner where called 4520 and where half-height
+  5.25" size drives. Those where used to develop the audio firmware. shortly
+  after this, the size could be reduced to 3.5" full-height (which is the same
+  height as 5.25" half height by the way). This is the size shared by all
+  following models. Both the 4520 and the 4320 were capable of reading
+  DDS1 at single speed (i.e.: 183 KByte/sec). They do not provide for DDS-DC
+  (data compression). The standard firmware on these drives was located in a
+  128 KByte size EPROM. The audio firmware did not fit that size, so it came
+  in a 256 KByte size EPROM. The follow-up models to the 4320 where the
+  first generation 4322 (DDS1 with DDS-DC). It had the firmware PROM as a
+  soldered (no socket) 128 KByte Flash-EPROM.  The advantage was that you could
+  upload firmware to the drive by mean of a firmware DDS tape or via the
+  SCSI-bus, but you couldn't upload audio firmware because it would not fit
+  into the Flash-EPROM. These drives were sold under a large variety of
+  different modelnumber, depending on 3.5" or 5.25" cage, internal or external, 
+  single ended or differential scsi, in an auto-loader or not The numbers of
+  the audio capable drive are  most likely to match the following pattern:
+  4[53]?[01].
+
+  The latest official audio firmware for these frst generation drives is called
+  2.63-15, which is also the firmware that SGI used up to about 1993. It has a
+  couple of bugs that are best explained in the demonstrational audio software
+  available on ftp.sgi.com (i am not quite sure that our software handles
+  all those bugs correctly, but it was in most part developed with a 4520
+  running the 2.63-15 firmware).
+ 
+  Lexus 2:
+  In the early 1990'th, the hardware of the Archive Python was overhauled,
+  resulting in a reduced part count. The visible difference is that the
+  motherboard now only hosts 2 daughterboards, one of which holds the
+  CPU and firmware chip, the other the SCSI controller chip and possibly
+  the compression chip. The Lexus 1 drives had 3 daughterboards. Lexus 2
+  drives need newer firmware but share the properties of the older drives
+  in all other respects (i.e.: 183 KB/sec - single speed - uncompressed
+  transfer rate).
+  
+  Sometime the 4324 and the 4326 popped up. The 4324 was a higher-speed DDS1-DC
+  drive and the 4326 was the DDS2 drive. In the beginning this drive
+  had the same problem with the size of the Flash-EPROM (of course the official
+  explanation was "Audio firmware is only supported in the 4320"). So for
+  a long time even SGI could not sell audio capable DAT-drives with compression
+  or DDS2. In this time, the audio firmware was ported to the newer drives
+  and i think that especially the higher speed (400 KByte/sec - which is about
+  2.2 times the nominal audio-DAT speed) was a difficulty in implementation,
+  especially for the fast-search mode. This firmware runs on the release
+  of the 4326 that is sold since about 2 years. Actually, i am not quite
+  sure if there are actually older hardware versions of the 4326 where the
+  audio firmware will not run on. As far as i know, the current audio
+  firmware is only distributed on firmware-tape or floppy, i.e.: there is
+  no need to exchange Flash-PROM anymore because the built in flash-PROM of
+  the newer drives are large enough to hold the audio firmware.
+  
+  Since about a year, Seagate sells bascially the same drive in three
+  different models: 4320: DDS1, no compression. 4324: DDS1-DC, 4326: DDS2.
+  The hardware differences are that the 4320 does not have the compression
+  chip and the 4324 is a somehwhat "diabled" 4326 so that i will not
+  accept DDS2 tapes with the reason of being able to sell it cheaper. All
+  three do have a native troughput of 400 KByte/sec (uncompressed) and
+  all three will probably run the audio firmware (even though it will
+  only be supported on the 4326). The new names for these drives that
+  Seagate (and Conner) tried to establish in the market (without much success)
+  are 4320: CTD2004; 4324: CTD4004; 4326: CTD8000. I had a last generation
+  4320 and the audio firmware ran fine on it.
+  
+  The last version of the firmware for these current drives is called T5AC-15.
+  
+  Rumors say that the Python series will shortly be superceeded by a new
+  series called "Cobra" that shall for once deliver higher throughput (500 Kbyte
+  speed or more) and where the audio firmware capabilities will be provided
+  as a standard version (which means that it would be more easy to order it).
+  It is also said that even for future drives there will be some kind of
+  "feature lockout" that will prohibit downloading audio firmware to a non
+  audio drive, but luckily i've not yet seen this.
+  
+  Summary: Trying to get audio firmware for an existing DDS drive can be a
+  frustrating adventure depending on whom you know. Your best chance is to
+  buy a new drive and explicitly request audio-firmware. If your dealer does
+  not know about it, request SGI-firmware. If your dealer still does not know
+  about it, go to another dealer. If you do have an old drive (as those outlines
+  above) but would still like to upgrade to audio firmware then you should
+  try to find a dealer who sells you 
+  CONNER/SEAGATE PART # 25601-006 : Audio Firmware PROM 2.75-15 
+  and have your dealer put it into your drive. I am not this will work for
+  Lexus1 drives, you will probably need the 2.63-15 PROM. I think officially
+  these may only be sold through SGI channels, but i am not sure.
+  
+  It's a pity that upgrading to audio firmware is considered to be a
+  non-enduser task, because i found both burning the PROMs and uploading the
+  software via SCSI to be easy tasks. A real good and friendly dealer with
+  a good connection to Seagate might as well borrow you a firmware tape to
+  upgrade one or two already bought drives...
+  
+  By the way: Urban legends says that the first models of the 4520, which were
+  amongst the first DDS drives at all (i think this was 1987-1988) did also
+  have an analog or AES/IBU serial digital audio input/output port. It was
+  soon decided to drop this feature because it was much too expensive in the
+  already very expensive DDS drives. Nevertheless, even the most current
+  Python drives without audio firmware will still simply start to play
+  audio-DAT tapes, when inserted, even when there is no audio output port for
+  more than 8 years. I think they have dropped this feature in the newest
+  firmware but the documentation still claims "these drives can read audio
+  tapes" which confuses many customers because it is totally unrelated to the
+  actual audio firmware. If your drive simply plays an inserted audio-DAT tape
+  then you surely do NOT have audio firmware loaded.
+  
+  Winding up: the 2GB DAT drives that Sun sold where 4324 OEM version and
+  the current 4GB drives are (as to my knowledge) 4326 drives (but i have not
+  seen any of those so far).
+  
+  Oh, and before i forget: 
+  
+  All the babble about Archive Python drives is my own erroneous and incomplete
+  knowledge. All errors are my own fault and everyhing correct in the text
+  is due to the very kind and friendly help and information from the german
+  Conner and then Seagte support persons without whom we could not have written
+  DATlib.
+  
+
+7. Suns tape driver and compression
+   --------------------------------
+
+  This chapter is totally audio unrelated and only tries to explain
+  why life with DDS & SUN is difficult if you want to control compression.
+
+  DAT drives and compression:
+
+  DDS tapes originally had no compression. Even today a lot of DDS-drives
+  are sold that do not support compression. Compression means that the tape
+  does accept normal data over the SCSI-interface but puts this data in
+  a more compact form onto the tape. The effect is that more data fits onto
+  the tape and the data transfer rate is higher. The cost is an additional
+  chip on the DDS-drive. This chip implements DCLZ -
+  "Data Compression Lempel Ziv".
+
+  In principle you always want to have compression, except if you don't:
+
+  - If you want to exchange data with somebody with a drive with no
+    compression because that drive cannot read compressed tapes either.
+  
+  - If you write pre-compressed data because precompressed data can get
+    expanded by the DCLZ chip by up to 30% instead of getting compressed.
+  
+  Selecting if a DDS drive will use compression differs from vendor to
+  vendor. Common to all drives that do support compression is that they offer
+  a so called "data compression configuration page" that you can use to
+  enable/disable compression and also enable/disable decompression. Some
+  drives do also have other software mechanisms to achieve the same result
+  and many drives have an external hardware jumper to disable data compression
+  by default.
+
+  Sun chose not to allow users to select compression by mean of the
+  "data compression configuration page" due to historical reasons and
+  probably lazyness of the programmers. Instead the Sun 'st' driver does
+  only allow to change the so called "density" which normally is unrelated
+  to compression/decompression. The four density numbers configured in
+  '/kernel/drv/st.conf' for a specific drive are just these densities.
+  To allow for the selection of compression or not via this mechanism
+  sun itself sells only DDS drives (actually Archive Pythons) that do
+  support to change the compression mode via this density. With this
+  Sun specific firmware, density 0x00 means compression off and density 0x81
+  means compression on (nobody ever tries to disable decompression of course).
+
+  A standard firmware in every DDS knows about densities 0x00 and 0x13
+  which do mean the same, i.e.: DDS and compression on if the drive can
+  do compression. For newer HP DDS drives there is a switch setting to
+  allow the drive to recognize 0x00 as compression off and 0x03 as compression
+  on. Also HP DDS drives do yet support another way of selecting
+  compression which is supported in Suns 'st' driver since Solaris 2.5.
+
+  In Summary: If you do use the 'st' driver that comes with DATlib and
+  you do not only use Sun-Archive-Pythons, then it is probably the
+  most reliable solution to put the hardware jumper on the DDS drives
+  to disable compression by default. This way a naive user will always
+  write uncompressed and never get problems with portability of his
+  data. If there really is the need for compression (speed or volume)
+  then you can simply use "dat compression on".
+
+  By the way: in theory it should be possible to read compressed data on
+  every DDS-drive and uncompress it in software on the host. Nobody
+  ever tried this though.
+
+
+8. Who:
+   ----
+
+  DATlib was written by Marcus Meissner as a "Studienarbeit", which is a
+  practical work of about 3 to 6  month and is a required work for getting the
+  masters degree at the CS department of the University Erlangen/Nuernberg.
+  
+  Supervision, additional documentation and cleanup was provided by
+  Toerless Eckert.
+  
+  If you do have questions about DATlib, we have set up an E-Mail alias:
+  
+  <datlib@immd4.informatik.uni-erlangen.de>
+
+  The official source for DATlib is:
+
+  ftp://ftp.informatik.uni-erlangen.de/pub/DATlib
+
+
